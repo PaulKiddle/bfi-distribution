@@ -1,0 +1,174 @@
+---
+import catalog, { columns, date } from '../data.ts';
+import { type Entry } from '../../converter/catalog.ts';
+
+export const partial = true;
+
+type Params = {
+	sortDesc: boolean,
+	sortBy: string|null,
+	q: string|null
+	certificate: string|null,
+	format: string|null,
+	genre: string|null,
+	country: string|null,
+	picture: string|null,
+	where: string|null
+};
+
+export function getMeta({ searchParams }: URL) {
+	const params: Params = {
+		q: searchParams.get('q'),
+		sortBy: searchParams.get('sort'),
+		sortDesc: !!searchParams.get('sortDesc'),
+		certificate: searchParams.get('certificate'),
+		format: searchParams.get('format'),
+		genre: searchParams.get('genre'),
+		country: searchParams.get('country'),
+		picture: searchParams.get('picture'),
+		where: searchParams.get('where')
+	}
+
+	return {
+		params,
+		date
+	}
+}
+
+
+export function getData({ q, sortBy, sortDesc, certificate, format, genre, country, picture, where }: Params){
+	const rows = catalog.records;
+	const query = q?.toLowerCase();
+
+	const filters: ((r: Entry) => boolean)[] = [];
+
+	if(query) {
+		if(where === 'title') {
+			filters.push(r => !!r.matchesTitle(query))
+		} else if(where === 'people') {
+			filters.push(r => !!r.matchesPerson(query))
+		} else {
+			filters.push(r => !!r.matchesSynopsis(query) || !!r.matchesTitle(query))
+		}
+	}
+
+	if(certificate) {
+		filters.push(r => r.certificate === certificate);
+	}
+
+	if(format) {
+		filters.push(r => r.format.includes(format));
+	}
+
+	if(genre) {
+		filters.push(r => r.genre.includes(genre));
+	}
+
+	if(country) {
+		filters.push(r => r.hasCountry(country));
+	}
+
+
+	if(picture) {
+		filters.push(r => r.hasPictureType(picture));
+	}
+
+	const records = rows.filter(r => filters.every(f=>f(r)));
+
+	switch(sortBy) {
+		case 'title':
+			records.sort((a, b) => a.compareTitle(b, sortDesc));
+			break;
+		case 'certificate':
+			records.sort((a, b) => a.compareCertificate(b, sortDesc));
+			break;
+		case 'duration':
+			records.sort((a, b) => a.compareDuration(b, sortDesc));
+			break;
+		case 'year':
+			records.sort((a, b) => a.compareYear(b, sortDesc));
+			break;
+	}
+
+	return records;
+}
+
+const { params } = getMeta(Astro.url);
+const data = getData(params);
+
+const dlCols = [
+	'cast',
+	'certificate',
+	'countries',
+	'directors',
+	'duration',
+	'format',
+	'genre',
+	'picture',
+	'originalTitle',
+	'year'
+] as const;
+
+const colTitles = Object.fromEntries(dlCols.map(col => {
+	const title = columns.find(c=>c.key === col)?.title ?? (col[0].toUpperCase()+col.slice(1));
+	return [col, title]
+}));
+---
+<output>{data.length}</output> results
+
+<style>
+.list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+
+	& > * {
+		flex: 0 0 48%;
+	}
+}
+
+dl {
+	column-count: 2;
+}
+
+dt {
+	font-weight: bold;
+}
+
+.data-item {
+	display: inline-block;
+	width: 100%;
+	margin-bottom: 10px;
+}
+
+.item {
+	background: rgb(255, 227, 216);
+	border: 2px solid salmon;
+	border-radius: 5px;
+	padding: 5px;
+}
+
+.synopsis {
+	padding: 20px;
+}
+</style>
+
+<div class=list>
+{data.map(row=>
+	<article class="item">
+		<h1>{row.title}</h1>
+		<dl>
+			{dlCols.map(field => !(Array.isArray(row[field]) ? !!row[field].length : !!row[field]) ? null : <div class="data-item">
+				<dt>{colTitles[field]}</dt>
+				<dd>{Array.isArray(row[field]) ? row[field].join(', ') : row[field]}</dd>
+			</div>)}
+		</dl>
+		<div class="synopsis">
+			{row.highlight(params.q, match=><mark>{match}</mark>).map(s=><>{s}<br /></>)}
+		</div>
+		{row.warnings.length ? <div>Data warnings:
+		<ul>{row.warnings.map(w=><li>{w}</li>)}</ul>
+		</div> : null}
+	</article>
+)}
+</div>

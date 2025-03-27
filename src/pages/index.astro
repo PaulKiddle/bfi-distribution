@@ -1,11 +1,178 @@
 ---
-import Welcome from '../components/Welcome.astro';
+import { certificates, formats, genres, countries, pictures } from '../data.ts';
 import Layout from '../layouts/Layout.astro';
+import IndexPartial, { getData, getMeta } from './index.partial.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const {params, date} = getMeta(Astro.url);
+
+const accept = Astro.url.searchParams.get('accept') || Astro.request.headers.get('accept');
+
+if(accept?.includes('json')) {
+	const data = getData(params);
+	return new Response(JSON.stringify(data, null, 2), {
+		headers: { 'Content-type': 'application/json' }
+	});
+}
+
+const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 ---
-
 <Layout>
-	<Welcome />
+	<script>
+		import "@virtualstate/navigation/polyfill";
+
+		(window as any).navigation.addEventListener("navigate", (event: any) => {
+			const destUrl = new URL(event.destination.url);
+
+			if(!event.canIntercept || (destUrl.pathname !== window.location.pathname)) {
+				return;
+			}
+
+			if(event.originalEvent.type !== 'submit') {
+				for(const el of document.forms[0].elements as any as HTMLInputElement[]) {
+					switch(el.type) {
+						case 'search':
+						case 'select-one':
+							el.value = (destUrl.searchParams.get(el.name) ?? '')
+							break;
+						case 'radio':
+							if(!el.value && !destUrl.searchParams.has(el.name)) {
+								el.checked = true;
+							} else {
+								el.checked = destUrl.searchParams.getAll(el.name).includes(el.value)
+							}
+							break;
+					}
+				}
+			}
+
+			event.intercept({
+				async handler(){
+					try {
+						const res = await fetch('index.partial' + destUrl.search);
+						const tbody = document.querySelector('#content')!;
+						tbody.innerHTML = await res.text();
+					} catch(e) {
+						console.error(e);
+						window.location = event.destination.href;
+					}
+				}
+			})
+		});
+	</script>
+
+	<style>
+		.main {
+			margin: 20px;
+		}
+	</style>
+
+	<div class=main>
+		{date}<br>
+		<form>
+			<input type=search name=q value={params.q}>
+			<button>Search</button>
+
+			<label>
+				<input type='radio' name=where value='title' checked={params.where==='title'}>
+				In Title
+			</label>
+			<label>
+				<input type='radio' name=where value='' checked={!params.where}>
+				In Synopsis
+			</label>
+			<label>
+				<input type='radio' name=where value='people' checked={params.where==='people'}>
+				In Cast & Director
+			</label>
+
+			<br>
+
+			<label>Sort by
+				<select name=sort>
+					<option value="">None</option>
+					{sortByCols.map(col =>
+						<option value={col} selected={col===params.q}>{col}</option>
+					)}
+				</select>
+			</label>
+
+			<label>Order
+				<select name=sortDesc>
+					<option value=''>Ascending</option>
+					<option value='desc' selected={!!params.sortDesc}>Descending</option>
+				</select>
+			</label>
+			<br>
+
+			<label>Certificate
+				<select name=certificate>
+					<option value="">Any</option>
+					{certificates.map(v =>
+						<option value={v} selected={v===params.certificate}>{v}</option>
+					)}
+				</select>
+			</label>
+
+
+			<label>Format
+				<select name=format>
+					<option value="">Any</option>
+					{formats.map(v =>
+						<option value={v} selected={v===params.format}>{v}</option>
+					)}
+				</select>
+			</label>
+
+
+			<label>Genre
+				<select name=genre>
+					<option value="">Any</option>
+					{genres.map(v =>
+						<option value={v} selected={v===params.genre}>{v}</option>
+					)}
+				</select>
+			</label>
+
+			<label>Country
+				<select name=country>
+					<option value="">Any</option>
+					{countries.map(v =>
+						<option value={v} selected={v===params.country}>{v}</option>
+					)}
+				</select>
+			</label>
+
+			<label>Picture Type
+				<select name=picture>
+					<option value="">Any</option>
+					{pictures.map(v =>
+						<option value={v} selected={v===params.picture}>{v}</option>
+					)}
+				</select>
+			</label>
+			<a href={Astro.url.pathname}>Clear</a>
+		</form>
+		<script>
+			function debounce<F extends (...args: any)=>any>(t: number, f: F){
+				let timerId: number;
+
+				return (...args: Parameters<F>) => {
+					clearTimeout(timerId);
+					timerId = setTimeout(f.bind(null, ...args), t);
+				}
+			}
+			const f = document.querySelector('form')!;
+			
+			f.addEventListener('change', (e) => {
+				f.requestSubmit();
+			});
+
+			const s = document.querySelector('[type=search]')!;
+
+			s.addEventListener('input', debounce(500, () => f.requestSubmit()));
+		</script>
+		<div id=content>
+			<IndexPartial {...params} />
+		</div>
+	</div>
 </Layout>

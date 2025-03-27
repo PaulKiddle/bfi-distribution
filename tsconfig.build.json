@@ -1,0 +1,13 @@
+{
+  "include": ["regexp.escape.d.ts", "converter/distributionData.ts"],
+	"compilerOptions": {
+	  "target": "ES2024",
+	  "module": "ESNext",
+	  "moduleResolution": "node",
+	  "allowSyntheticDefaultImports": true,
+	  "lib": ["es2024", "ESNext.Iterator"],
+	  "outDir": "dist",
+	  "strict": true
+	},
+	"exclude": []
+  }
