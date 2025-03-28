@@ -1,0 +1,150 @@
+@use './tokens.scss' as theme;
+
+h1 {
+	font-family: theme.$headingFont;
+	color: black;
+	font-weight: theme.$fontWeightBold;
+	font-size: theme.$titleSizeS;
+	letter-spacing: theme.$titleSpacing;
+
+	@media screen and (min-width: theme.$m){
+		font-size: theme.$titleSizeM;
+	}
+	@media screen and (min-width: theme.$l){
+		font-size: theme.$titleSizeL;
+	}
+	@media screen and (min-width: theme.$xl){
+		font-size: theme.$titleSizeXl;
+	}
+}
+
+h2 {
+	font-weight: bold;
+	font-size: 1.4375rem;
+
+	@media screen and (min-width: theme.$l){
+		font-size: 1.6875rem;
+	}
+	@media screen and (min-width: theme.$xl){
+		font-size: 2rem;
+	}
+}
+
+input, select {
+	margin-top: theme.$spacingXs;
+	padding: theme.$spacingM theme.$spacingS theme.$spacingS;
+	font-size: theme.$fontSizeS;
+	font-weight: theme.$fontWeightSemiBold;
+	border: theme.$border solid black;
+	background-color: white;
+  
+	border-bottom: theme.$borderBold solid theme.$primary;
+	transition: border theme.$transitionTime;
+  
+	&:hover {
+	  border-bottom: theme.$borderBold solid theme.$lightFocus;
+	}
+  
+	&:focus {
+	  border: theme.$border solid theme.$lightFocus;
+	  border-bottom: theme.$borderBold solid theme.$focus;
+	  outline: none;
+	}
+  
+	::placeholder {
+	  font-size: theme.$fontSizeS;
+	  font-weight: theme.$fontWeightSemiBold;
+	  color: black;
+	}
+  
+	&[disabled] {
+	  background-color: white;
+	  border-color: black;
+  
+	  &::placeholder,
+	  ::placeholder {
+		font-weight: theme.$fontWeightSemiBold;
+		color: black;
+	  }
+	}
+}
+
+button, form a[rel~=index] {
+	font-weight: theme.$fontWeightBold;
+    font-size: theme.$fontSizeM;
+    line-height: theme.$lineHeightM;
+    text-decoration: none;
+    text-shadow: none;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+
+    color: white;
+
+    // Create a black background with a purple line overlaid at the bottom
+    background: linear-gradient(to top, theme.$primary, theme.$primary), black;
+    background-repeat: no-repeat;
+    background-position: bottom;
+
+    // Initially set the purple line to 5px high
+    background-size: 100% theme.$buttonUnderline;
+
+    // Add a bit of padding an take off a bit of margin at the bottom
+    // Otherwise it looks unbalanced
+    padding: theme.$buttonPadding theme.$standardSpace;
+	padding-bottom: theme.$spacingS;
+    margin-bottom: - theme.$buttonUnderline;
+
+    // Animate all properties
+    transition: theme.$transitionTime;
+
+    &:hover,
+    &:focus {
+        // On hover, grow the purple line to full height
+        background-size: 100% 100%;
+    }
+
+    &:focus:not(:active) {
+        // Add the pink outline on focus
+        box-shadow: 0 0 0 theme.$buttonBorder theme.$focus;
+        outline: none;
+
+        // Bring in the bottom border otherwise it looks like there's too much space
+        // margin-bottom: theme.$buttonBorder;
+    }
+
+    svg {
+      fill: currentColor;
+    }
+}
+
+label:has(select) {
+	display: inline-flex;
+	flex-direction: column;
+}
+
+label:has(input[type=radio]) {
+	display: inline-block;
+}
+
+fieldset {
+	display: inline;
+	border: 1px solid black;
+}
+
+dl:has(div) {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(50px, 1fr) minmax(150px, 2fr));
+	gap: 10px;
+
+	div{ 
+		display: grid;
+		grid-column: span 2;
+		grid-template-columns: subgrid;
+		border-bottom: 2px solid theme.$lightest;
+	}
+
+	dt {
+		font-weight: bold;
+	}
+}

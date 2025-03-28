@@ -1,0 +1,87 @@
+$headingFont: sans-serif;
+$bodyFont: sans-serif;
+
+$darkerGrey: #4E4E4E;
+$darkGrey: #746D6D;
+$grey: #E9E8E8;
+$lightGrey: #f6f6f6;
+
+$primary: #783DF6;
+$focus: #FF22C9;
+$dark: #310F7A;
+$darkPink: #EF8DC6;
+$light: #E8DDFF;
+$lightest: #F3EEFF;
+$lightFocus: #F9DDE7;
+
+$playerRentals: #cf474a;
+$playerSubs: #783DF6;
+$playerFree: #25856E;
+
+// LFF Strand colours
+$strandLove: #e61e26;
+$strandDebate: #0070af;
+$strandCult: #c0198d;
+$strandLaugh: #987001;
+$strandDare: #632b86;
+$strandJourney: #00828e;
+$strandCreate: #310d35;
+$strandFamily: #2a2c76;
+$strandExperimenta: #098642;
+$strandTreasures: #a5662a;
+$strandExpanded: #5d1650;
+$strandEpisodic: #044e43;
+$strandEvents: #d14627;
+
+// breakpoints
+$s: 550px;
+$m: 768px; // tablets and larger
+$mSub: 895px; // for that awkward bit inbetween
+$l: 1040px; // desktops and larger
+$xl: 1440px; // large desktops only
+
+// spacing
+$spacingXs: 5px;
+$spacingS: 10px;
+$spacingM: 15px;
+$spacingL: 25px;
+$spacingXl: 35px;
+$spacingXxl: 50px;
+
+// sizes & spacings
+$horizontalPadding: 20px;
+$standardSpace: 25px;
+$border: 2px;
+$borderBold: $spacingXs;
+
+$buttonBorder: 4px;
+$buttonPadding: $spacingS;
+$buttonUnderline: $borderBold;
+
+
+$transitionTime: 0.3s;
+
+$fontWeightSemiBold: 600;
+$fontWeightBold: 700;
+
+$fontSizeS: 1.05rem;
+$lineHeightS: 1.5;
+
+$smallFontSizeM: 0.8rem;
+$fontSizeM: 1.14rem;
+$lineHeightM: 1.6;
+$largeFontSizeM: 1.4rem;
+$largeLineHeightM: 1.6;
+
+$fontSizeXl: 1.25rem;
+$lineHeightXl: 1.6;
+$largeFontSizeXl: 1.6rem;
+$largeLineHeightXl: 1.6;
+
+$titleSpacing: 0.01em;
+$titleSizeS: 2.2rem;
+$titleSizeM: 2.4rem;
+$titleSizeL: 2.6rem;
+$titleSizeXl: 2.8rem;
+
+$gridGap: $standardSpace;

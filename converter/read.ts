@@ -69,7 +69,7 @@ export default async function parseSpreadsheet(data: Buffer, date: string|undefi
 
 	return {
 		date,
-		// columns,
+		columns,
 		records: records.map(r => ({ ...r, genre: r.genre.toJSON(), filmFormat: r.filmFormat.toJSON() })),
 		warnings: differs
 	}

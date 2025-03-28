@@ -1,0 +1,28 @@
+@use './tokens.scss' as theme;
+
+@mixin flex-grid($child: '*') {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+
+	& > #{$child} {
+		flex: 1 1 20%;
+	}
+}
+
+@mixin grid($basis: 400px) {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax($basis, 1fr));
+	grid-gap: 1rem;
+}
+
+@mixin card {
+	background: theme.$light;
+	border: theme.$border solid theme.$primary;
+	border-radius: theme.$borderBold;
+	padding: theme.$horizontalPadding theme.$spacingM;
+
+	*:first-child {
+		margin-top: 0;
+	}
+}

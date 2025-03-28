@@ -1,14 +1,14 @@
 ---
-import { certificates, formats, genres, countries, pictures } from '../data.ts';
+import catalog, { certificates, formats, genres, countries, pictures } from '../data.ts';
 import Layout from '../layouts/Layout.astro';
-import IndexPartial, { getData, getMeta } from './index.partial.astro';
+import IndexPartial, { getMeta } from './index.partial.astro';
 
 const {params, date} = getMeta(Astro.url);
 
 const accept = Astro.url.searchParams.get('accept') || Astro.request.headers.get('accept');
 
 if(accept?.includes('json')) {
-	const data = getData(params);
+	const data = catalog.query(params);
 	return new Response(JSON.stringify(data, null, 2), {
 		headers: { 'Content-type': 'application/json' }
 	});
@@ -49,49 +49,79 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 				async handler(){
 					try {
 						const res = await fetch('index.partial' + destUrl.search);
-						const tbody = document.querySelector('#content')!;
+						const tbody = document.querySelector(`[aria-live=polite]`)!;
 						tbody.innerHTML = await res.text();
 					} catch(e) {
 						console.error(e);
-						window.location = event.destination.href;
+						window.location.href = destUrl.href;
 					}
 				}
 			})
 		});
 	</script>
-
-	<style>
+	<style lang='scss'>
+		@use '../utils.scss' as theme;
 		.main {
 			margin: 20px;
+		}
+
+		.show-grid {
+			margin: 1em;
+
+			@include theme.flex-grid(':global(*)');
+		}
+
+		label {
+			padding: 0.2em;
+		}
+
+		form {
+			background: white;
+			position: sticky;
+			top: 0;
+			padding: 0 0 10px;
 		}
 	</style>
 
 	<div class=main>
-		{date}<br>
+		<h1>BFI Distribution Catalogue</h1>
+		{ date && <>
+			Last updated: <time datetime={date}>
+				{new Intl.DateTimeFormat('en-GB', { dateStyle: 'long' }).format(new Date(date))}
+			</time><br />
+		</>
+		}
+		<search></search>
 		<form>
-			<input type=search name=q value={params.q}>
+			<input type=search name=q value={params.search?.term}>
 			<button>Search</button>
 
 			<label>
-				<input type='radio' name=where value='title' checked={params.where==='title'}>
+				<input type='radio' name=where value='title' checked={params.search?.field==='title'}>
 				In Title
 			</label>
 			<label>
-				<input type='radio' name=where value='' checked={!params.where}>
+				<input type='radio' name=where value='' checked={!params.search?.field}>
 				In Synopsis
 			</label>
 			<label>
-				<input type='radio' name=where value='people' checked={params.where==='people'}>
+				<input type='radio' name=where value='people' checked={params.search?.field==='people'}>
 				In Cast & Director
 			</label>
 
-			<br>
+			<a href={Astro.url.pathname} rel="index">Clear</a>
+			
+			<details>
+				<summary>Advanced</summary>
 
-			<label>Sort by
+
+			<fieldset>
+				<legend>Sort</legend>
+			<label>Field
 				<select name=sort>
 					<option value="">None</option>
 					{sortByCols.map(col =>
-						<option value={col} selected={col===params.q}>{col}</option>
+						<option value={col} selected={col===params.search?.term}>{col}</option>
 					)}
 				</select>
 			</label>
@@ -99,16 +129,18 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 			<label>Order
 				<select name=sortDesc>
 					<option value=''>Ascending</option>
-					<option value='desc' selected={!!params.sortDesc}>Descending</option>
+					<option value='desc' selected={!!params.sort?.desc}>Descending</option>
 				</select>
 			</label>
-			<br>
+			</fieldset>
 
+			<fieldset>
+				<legend>Filter</legend>
 			<label>Certificate
 				<select name=certificate>
 					<option value="">Any</option>
 					{certificates.map(v =>
-						<option value={v} selected={v===params.certificate}>{v}</option>
+						<option value={v} selected={v===params.filter?.certificate}>{v}</option>
 					)}
 				</select>
 			</label>
@@ -118,7 +150,7 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 				<select name=format>
 					<option value="">Any</option>
 					{formats.map(v =>
-						<option value={v} selected={v===params.format}>{v}</option>
+						<option value={v} selected={v===params.filter?.format}>{v}</option>
 					)}
 				</select>
 			</label>
@@ -128,7 +160,7 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 				<select name=genre>
 					<option value="">Any</option>
 					{genres.map(v =>
-						<option value={v} selected={v===params.genre}>{v}</option>
+						<option value={v} selected={v===params.filter?.genre}>{v}</option>
 					)}
 				</select>
 			</label>
@@ -137,7 +169,7 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 				<select name=country>
 					<option value="">Any</option>
 					{countries.map(v =>
-						<option value={v} selected={v===params.country}>{v}</option>
+						<option value={v} selected={v===params.filter?.country}>{v}</option>
 					)}
 				</select>
 			</label>
@@ -146,12 +178,14 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 				<select name=picture>
 					<option value="">Any</option>
 					{pictures.map(v =>
-						<option value={v} selected={v===params.picture}>{v}</option>
+						<option value={v} selected={v===params.filter?.picture}>{v}</option>
 					)}
 				</select>
 			</label>
-			<a href={Astro.url.pathname}>Clear</a>
+		</details>
+		</fieldset>
 		</form>
+	</search>
 		<script>
 			function debounce<F extends (...args: any)=>any>(t: number, f: F){
 				let timerId: number;
@@ -171,7 +205,7 @@ const sortByCols = ['title', 'certificate', 'duration', 'year'] as const;
 
 			s.addEventListener('input', debounce(500, () => f.requestSubmit()));
 		</script>
-		<div id=content>
+		<div aria-live="polite">
 			<IndexPartial {...params} />
 		</div>
 	</div>

@@ -29,7 +29,8 @@ export const certificates = [
 export type CatalogSource = {
 	records: Row[],
 	date: string|undefined,
-	warnings: Warning[]
+	warnings: Warning[],
+	columns: any[]
 };
 
 	function getCountryList(data: string|null|number) {
@@ -137,7 +138,16 @@ export type CatalogSource = {
 		return desc ? b!-a! : a!-b!;
 	}
 
-	const toRegex = (term: string|RegExp, flags = 'i') => typeof term === 'string' ? new RegExp(RegExp_escape(term), flags) : term;
+	const toRegex = (term: string|RegExp, flags = 'iug') => { 
+		if(typeof term === 'string') {
+			return new RegExp(
+				RegExp_escape(term)
+				//.replaceAll(/(?<!\\(x[a-z0-9]?)?)[a-z]/gi, ($0)=>($0+String.raw`\p{Diacritic}*`))
+				,
+				flags);
+		}
+		return term;
+	}
 
 	export class Entry {
 		title
@@ -160,6 +170,7 @@ export type CatalogSource = {
 		#years
 		synopsis
 		warnings: string[]
+		#normal: Record<string, (string|null)[]> = {};
 
 		constructor(row: Row){
 			this.warnings = []
@@ -255,21 +266,34 @@ export type CatalogSource = {
 			});
 		}
 
+
+		#matchesTargets(string: string|RegExp, targets: (string|undefined|null)[]){
+			const matcher = toRegex(string);
+			const diacritic = /\p{Diacritic}/gu;
+			
+			if(!diacritic.test(matcher.source.normalize('NFD'))) {
+				targets = targets.map(t=>t?.normalize('NFD').replaceAll(diacritic, '')??null)
+			}
+			return targets.some(target => target?.match(matcher));
+		}
+
 		matchesSynopsis(string: string|RegExp){
-			const matcher = toRegex(string, 'i')
-			return this.synopsis.some(s=>s.match(matcher))
+			return this.#matchesTargets(string, this.synopsis);
 		}
 
 		matchesTitle(string: string|RegExp){
-			const matcher = toRegex(string, 'i')
-			return !!this.title.match(matcher) || !!this.#sortTitle.match(matcher) || !!this.originalTitle?.match(matcher)
+			const targets = [this.title, this.#sortTitle, this.originalTitle];
+			return this.#matchesTargets(string, targets);
 		}
 
 		matchesPerson(string: string|RegExp){
-			const matcher = toRegex(string, 'i');
-			
-			return !!String(this.cast??'').match(matcher) || !!this.directors?.match(matcher)
-				|| [...this.#cast??[], ...this.#directors??[]].some(p => p.match(matcher));
+			const targets = [
+				String(this.cast??''),
+				this.directors,
+				...this.#cast??[], ...this.#directors??[]
+			];
+
+			return this.#matchesTargets(string, targets);
 		}
 
 		hasCountry(c: string) {
@@ -282,6 +306,25 @@ export type CatalogSource = {
 	}
 
 
+export type QueryParams = {
+	sort?: {
+		by: string|null,
+		desc?: boolean
+	}
+	search?: {
+		term: string|null
+		field: string|null
+	}
+	filter?: {
+		certificate: string|null,
+		format: string|null,
+		genre: string|null,
+		country: string|null,
+		picture: string|null,
+	}
+};
+
+
 export default class Catalog {
 	date
 	records
@@ -291,5 +334,67 @@ export default class Catalog {
 		this.date = catalog.date;
 		this.records = catalog.records.map(r => new Entry(r));
 		this.warnings = catalog.warnings;
+	}
+
+
+	query({ sort, search, filter }: QueryParams){
+		const rows = this.records;
+		const query = search?.term?.toLowerCase();
+
+		const filters: ((r: Entry) => boolean)[] = [];
+
+		if(query) {
+			if(search?.field === 'title') {
+				filters.push(r => !!r.matchesTitle(query))
+			} else if(search?.field === 'people') {
+				filters.push(r => !!r.matchesPerson(query))
+			} else {
+				filters.push(r => !!r.matchesSynopsis(query) || !!r.matchesTitle(query))
+			}
+		}
+
+		if(filter){
+			const { certificate, format, genre, country, picture } = filter;
+
+			if(certificate) {
+				filters.push(r => r.certificate === certificate);
+			}
+
+			if(format) {
+				filters.push(r => r.format.includes(format));
+			}
+
+			if(genre) {
+				filters.push(r => r.genre.includes(genre));
+			}
+
+			if(country) {
+				filters.push(r => r.hasCountry(country));
+			}
+
+
+			if(picture) {
+				filters.push(r => r.hasPictureType(picture));
+			}
+		}
+
+		const records = rows.filter(r => filters.every(f=>f(r)));
+
+		switch(sort?.by) {
+			case 'title':
+				records.sort((a, b) => a.compareTitle(b, sort.desc));
+				break;
+			case 'certificate':
+				records.sort((a, b) => a.compareCertificate(b, sort.desc));
+				break;
+			case 'duration':
+				records.sort((a, b) => a.compareDuration(b, sort.desc));
+				break;
+			case 'year':
+				records.sort((a, b) => a.compareYear(b, sort.desc));
+				break;
+		}
+
+		return records;
 	}
 }

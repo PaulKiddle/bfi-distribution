@@ -1,6 +1,11 @@
 import fs from 'fs';
 import parseSpreadsheet from './read.js';
-import Catalog, {type CatalogSource} from './catalog.js';
+import Catalog, {type CatalogSource, Entry} from './catalog.js';
+
+export {
+	Catalog,
+	Entry
+}
 
 const distributionPage = 'https://www.bfi.org.uk/bfi-distribution';
 
